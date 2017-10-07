@@ -7,13 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -35,7 +38,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
     private double latitude,longitude;
@@ -45,10 +48,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private BottomSheetBehavior bottomSheetBehavior;
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        getLocationPermission();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -76,7 +82,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationService locationService;
 
     boolean mBound = false;
-    Marker current;
+    Marker currentLoc, selected;
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -87,10 +93,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent locationServiceIntent = new Intent(MapsActivity.this, LocationService.class);
         bindService(locationServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
 
-        current = mMap.addMarker(new MarkerOptions().position(new LatLng(-31, 54)).title("You"));
+        currentLoc = mMap.addMarker(new MarkerOptions().position(new LatLng(-31, 54)).title("You"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
 
         updateLocation();
+
+        setMapListener();
+    }
+
+    private void setMapListener(){
+        mMap.setOnMapClickListener(this);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -139,8 +151,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void updateLocation(){
-        current.setPosition(new LatLng(latitude, longitude));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+        currentLoc.setPosition(new LatLng(latitude, longitude));
+        if(listenLoc)
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
     }
 
     private void initBottomSheet(){
@@ -217,12 +230,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (resultData != null) {
                 uri = resultData.getData();
                 Log.i(TAG, "Uri: " + uri.toString());
-                uploadFile(uri);
+                if(selected == null)
+                    selected.setPosition(currentLoc.getPosition());
+                uploadFile(uri, selected.getPosition());
             }
         }
     }
 
-    void uploadFile(Uri uri){
+    void uploadFile(Uri uri, LatLng latLng){
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
 
@@ -249,5 +264,57 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 //                Log.d(TAG, "onSuccess() called with: downloadurl = [" + downloadUrl + "]");
             }
         });
+    }
+
+    boolean mLocationPermissionGranted =false;
+    private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 51;
+
+    private void getLocationPermission() {
+    /*
+     * Request location permission, so that we can get the location of the
+     * device. The result of the permission request is handled by a callback,
+     * onRequestPermissionsResult.
+     */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
+        //updateLocationUI();
+    }
+
+    boolean listenLoc = true;
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        listenLoc = false;
+        if(selected==null){
+            selected = mMap.addMarker(new MarkerOptions().position(latLng).title(latLng.toString()));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+        }
+        else {
+            selected.setPosition(latLng);
+            selected.setTitle(latLng.toString());
+        }
     }
 }
