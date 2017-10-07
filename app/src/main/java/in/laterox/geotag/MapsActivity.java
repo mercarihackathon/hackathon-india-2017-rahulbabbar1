@@ -9,9 +9,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
+import android.support.annotation.StringDef;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -27,6 +29,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -34,9 +37,18 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
@@ -93,12 +105,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent locationServiceIntent = new Intent(MapsActivity.this, LocationService.class);
         bindService(locationServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
 
-        currentLoc = mMap.addMarker(new MarkerOptions().position(new LatLng(-31, 54)).title("You"));
+        currentLoc = mMap.addMarker(new MarkerOptions().position(new LatLng(-31, 54)).title("You").icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_loc)));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
 
         updateLocation();
 
         setMapListener();
+
     }
 
     private void setMapListener(){
@@ -139,6 +152,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             latitude = intent.getDoubleExtra("latitude",-1/*default value*/);
             longitude = intent.getDoubleExtra("longitude",-1/*default value*/);
             updateLocation();
+            fetchList(new LatLng(latitude, longitude));
         }
     };
 
@@ -231,13 +245,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 uri = resultData.getData();
                 Log.i(TAG, "Uri: " + uri.toString());
                 if(selected == null)
-                    selected.setPosition(currentLoc.getPosition());
-                uploadFile(uri, selected.getPosition());
+                    uploadFile(uri, currentLoc.getPosition());
+                else
+                    uploadFile(uri, selected.getPosition());
             }
         }
     }
 
-    void uploadFile(Uri uri, LatLng latLng){
+    void uploadFile(Uri uri,final LatLng latLng){
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
 
@@ -261,10 +276,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
 //                Uri downloadUrl = taskSnapshot.getDownloadUrl();
                 String path = taskSnapshot.getMetadata().getPath();
+                updateDatabase(latLng, path);
 //                Log.d(TAG, "onSuccess() called with: downloadurl = [" + downloadUrl + "]");
             }
         });
     }
+
+    void updateDatabase(final LatLng latLng, String path){
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("global");
+        String key = myRef.push().getKey();
+        myRef.child(key).child("lat").setValue(latLng.latitude);
+        myRef.child(key).child("long").setValue(latLng.longitude);
+        myRef.child(key).child("path").setValue(path);
+
+    }
+
 
     boolean mLocationPermissionGranted =false;
     private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 51;
@@ -316,5 +343,148 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             selected.setPosition(latLng);
             selected.setTitle(latLng.toString());
         }
+    }
+
+    double rad = 0.01;
+    class Point {
+        double lat;
+        double longit;
+        String path;
+        public Point(
+                double lat,
+                double longit,
+                String path) {
+            this.lat = lat;
+            this.longit = longit;
+            this.path = path;
+        }
+        
+        public Point(){
+            
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Point other = (Point) obj;
+            if (lat != other.lat)
+                return false;
+            if (longit != other.longit)
+                return false;
+            if(path != other.path)
+                return false;
+            return true;
+        }
+    }
+
+    Set<Point> queued = new HashSet<Point>();
+
+    void fetchList(LatLng latLng){
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("global");
+        Query latQuery = myRef.orderByChild("lat").startAt(latLng.latitude-rad).endAt(latLng.latitude+rad);
+        Query longQuery = myRef.orderByChild("long").startAt(latLng.longitude-rad).endAt(latLng.longitude+rad);
+
+        latQuery.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                Point mPoint = new Point();
+                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
+                    switch (postSnapshot.getKey()) {
+                        case "lat":
+                            mPoint.lat = (Double) postSnapshot.getValue();
+                            break;
+
+                        case "long":
+                            mPoint.longit = (Double) postSnapshot.getValue();
+                            break;
+
+                        case "path":
+                            mPoint.path = (String) postSnapshot.getValue();
+                            break;
+
+                    }
+                    //Log.d(TAG, "onChildAdded() called with: post = [" + postSnapshot + "], s = [" + s + "]");
+                }
+                if(!queued.contains(mPoint)){
+                    queued.add(mPoint);
+                    Log.d(TAG, "onChildAdded() called with: dataSnapshot = [" + mPoint.path + "], s = [" + s + "]");
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+        });
+        longQuery.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                Point mPoint = new Point();
+                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
+                    switch (postSnapshot.getKey()) {
+                        case "lat":
+                            mPoint.lat = (Double) postSnapshot.getValue();
+                            break;
+
+                        case "long":
+                            mPoint.longit = (Double) postSnapshot.getValue();
+                            break;
+
+                        case "path":
+                            mPoint.path = (String) postSnapshot.getValue();
+                            break;
+
+                    }
+                    //Log.d(TAG, "onChildAdded() called with: post = [" + postSnapshot + "], s = [" + s + "]");
+                }
+                if(!queued.contains(mPoint)){
+                    queued.add(mPoint);
+                    Log.d(TAG, "onChildAdded() called with: dataSnapshot = [" + mPoint.path + "], s = [" + s + "]");
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+        });
     }
 }
