@@ -48,7 +48,13 @@
 
         <activity
             android:name=".MapsActivity"
-            android:label="@string/title_activity_maps"></activity>
+            android:label="@string/title_activity_maps"/>
+        <activity
+            android:name=".UploadActivity"
+            android:label="@string/title_activity_maps"/>
+
+        <activity android:name=".PointActivity"/>
+
         <service android:name=".LocationService"/>
 
     </application>
