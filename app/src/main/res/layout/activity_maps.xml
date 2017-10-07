@@ -1,8 +1,17 @@
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/map"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="in.laterox.geotag.MapsActivity" />
+    tools:context="in.laterox.geotag.MapsActivity">
+
+    <include
+        layout="@layout/map_fragment"/>
+
+    <include
+        layout="@layout/bottom_sheet"/>
+
+
+</android.support.design.widget.CoordinatorLayout>

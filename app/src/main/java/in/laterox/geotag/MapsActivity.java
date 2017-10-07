@@ -6,10 +6,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.Resources;
 import android.os.IBinder;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -23,6 +28,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private double latitude,longitude;
+
+    private String TAG = "MapsActivity";
+
+    private BottomSheetBehavior bottomSheetBehavior;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,5 +123,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void updateLocation(){
         current.setPosition(new LatLng(latitude, longitude));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+    }
+
+    private void initBottomSheet(){
+        Resources r = getResources();
+        int bottomHeight  = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, r.getDisplayMetrics());
+
+        findViewById(R.id.map).setPadding(0,0,0,bottomHeight);
+        final int bottomHeight2 = bottomHeight;
+        View bottomSheet = findViewById( R.id.bottom_sheet);
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setPeekHeight(bottomHeight);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(View bottomSheet, int newState) {
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+                    bottomSheetBehavior.setPeekHeight(bottomHeight2);
+                }
+                if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+                    Log.d(TAG, "onStateChanged() called with: bottomSheet = [" + bottomSheet + "], newState = [" + newState + "]");
+                    //mBottomSheetBehavior.setPeekHeight(bottomHeight);
+                }
+            }
+
+            @Override
+            public void onSlide(View bottomSheet, float slideOffset) {
+                //mBottomSheetBehavior.setState(Bot);
+                Log.d(TAG, "onSlide() called with: bottomSheet = [" + bottomSheet + "], slideOffset = [" + slideOffset + "]");
+            }
+        });
+
     }
 }
