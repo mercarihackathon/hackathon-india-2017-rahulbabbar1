@@ -65,8 +65,8 @@ public class UploadActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 uploadButton.setEnabled(false);
-                description = descTV.toString();
-                name = nameTV.toString();
+                description = descTV.getText().toString();
+                name = nameTV.getText().toString();
                 uploadFile(uri, new LatLng(latitude, longitude));
             }
         });

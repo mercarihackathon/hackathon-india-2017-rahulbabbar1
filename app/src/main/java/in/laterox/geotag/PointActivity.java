@@ -34,6 +34,7 @@ import com.jaredrummler.materialspinner.MaterialSpinner;
 import org.w3c.dom.Text;
 
 import java.util.List;
+import java.util.logging.LogManager;
 
 import static in.laterox.geotag.RVAdapter.startDownload;
 
@@ -84,6 +85,7 @@ public class PointActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                    Log.d(TAG, "onChildAdded() called with: postSnapshot = [" + postSnapshot + "], s = [" + s + "]");
                     switch (postSnapshot.getKey()) {
                         case "lat":
                             mPoint.latitude = (Double) postSnapshot.getValue();
@@ -197,6 +199,7 @@ public class PointActivity extends AppCompatActivity {
 
     void updateValues(){
         nameTV.setText(mPoint.name);
+        Log.d(TAG, "updateValues() called" + mPoint.name);
         descTV.setText(mPoint.description);
         typeTV.setText(mPoint.type);
         latlngTV.setText(( (double)Math.round(mPoint.latitude * 100000d) / 100000d)

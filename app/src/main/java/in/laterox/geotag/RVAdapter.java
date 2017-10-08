@@ -69,6 +69,9 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.PointViewHolder>{
         StorageReference storageRef = storage.getReference();
 
 // Get reference to the file
+        if(path==null)
+            return;
+
         final StorageReference fileRef = storageRef.child(path);
         
 

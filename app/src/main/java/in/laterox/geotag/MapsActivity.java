@@ -180,20 +180,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLoc.getPosition()));
         }
         uploadActivity.putExtra("lat", selected.getPosition().latitude);
-        uploadActivity.putExtra("lat", selected.getPosition().longitude);
+        uploadActivity.putExtra("long", selected.getPosition().longitude);
         startActivity(uploadActivity);
     }
 
     private void getLocationPermission() {
         if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.INTERNET)
+                == PackageManager.PERMISSION_GRANTED ) {
             progress.setMessage("Getting Location :) ");
             progress.setMessage("Getting Location :) ");
             mLocationPermissionGranted = true;
         } else {
             ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            android.Manifest.permission.INTERNET},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
     }
@@ -235,10 +241,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                     switch (postSnapshot.getKey()) {
                         case "lat":
-                            mPoint.latitude = (Double) postSnapshot.getValue();
+                            mPoint.latitude = (double) postSnapshot.getValue();
                             break;
                         case "long":
-                            mPoint.longitude = (Double) postSnapshot.getValue();
+                            mPoint.longitude = (double) postSnapshot.getValue();
                             break;
 
                         case "path":
