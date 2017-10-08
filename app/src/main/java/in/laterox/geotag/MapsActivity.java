@@ -1,5 +1,6 @@
 package in.laterox.geotag;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -16,9 +17,16 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -35,8 +43,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
@@ -55,6 +65,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private double latitude, longitude;
     private String TAG = "MapsActivity";
     private BottomSheetBehavior bottomSheetBehavior;
+
+    ProgressDialog progress ;
+
+
     private ServiceConnection mConnection = new ServiceConnection() {
 
         @Override
@@ -78,6 +92,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             longitude = intent.getDoubleExtra("longitude", -1);
             updateLocation();
             fetchList(new LatLng(latitude, longitude));
+            progress.cancel();
         }
     };
 
@@ -85,19 +100,29 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        progress = new ProgressDialog(this);
+        progress.setMessage("Initializing :) ");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.setIndeterminate(true);
+
+        progress.show();
+
+        initRecyclerView();
 
         getLocationPermission();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
         findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 fetchFile();
             }
         });
+
+
+
     }
 
     @Override
@@ -107,6 +132,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Intent locationServiceIntent = new Intent(MapsActivity.this, LocationService.class);
         bindService(locationServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
+//        startService(locationServiceIntent);
 
         currentLoc = mMap.addMarker(new MarkerOptions().position(new LatLng(-31, 54)).title("You").icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_loc)));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
@@ -158,6 +184,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
+            progress.setMessage("Getting Location :) ");
             mLocationPermissionGranted = true;
         } else {
             ActivityCompat.requestPermissions(this,
@@ -175,6 +202,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     mLocationPermissionGranted = true;
+                    progress.setMessage("Getting Location :) ");
                 }
             }
         }
@@ -262,16 +290,52 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (!added.contains(mp)) {
                 added.add(mp);
                 mMap.addMarker(new MarkerOptions().position(new LatLng(mp.latitude, mp.longitude)).title("Title"));
+                points.add(mp);
+                Log.d(TAG, "test " + points.size());
+
+                if(adapter!=null){
+//                    adapter.swap(points);
+                    adapter.add(added);
+                    Log.d(TAG, "test() called");
+                    Log.d(TAG, "test " + points.size());
+                }
             }
         }
     }
 
     @Override
-    public boolean onMarkerClick(Marker marker) {
-//        Intent
-//        marker.getSnippet()
+    public boolean onMarkerClick(Marker marker){
         Intent pointActivity = new Intent(MapsActivity.this, PointActivity.class);
         startActivity(pointActivity);
         return false;
     }
+
+
+
+    private List<Point> points = new ArrayList<>();
+
+    RVAdapter adapter;
+
+    private void initRecyclerView(){
+
+        RecyclerView rv = (RecyclerView)findViewById(R.id.rv);
+        LinearLayoutManager llm = new LinearLayoutManager(MapsActivity.this);
+        rv.setLayoutManager(llm);
+
+        adapter = new RVAdapter(points);
+        rv.setAdapter(adapter);
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Unbind from the service
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+    }
+
 }
+

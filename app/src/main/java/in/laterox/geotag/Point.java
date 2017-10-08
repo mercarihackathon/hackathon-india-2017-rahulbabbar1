@@ -8,6 +8,8 @@ public class Point {
     double latitude;
     double longitude;
     String path;
+    String name, description;
+
     public Point(double latitude, double longitude, String path) {
         this.latitude = latitude;
         this.longitude = longitude;

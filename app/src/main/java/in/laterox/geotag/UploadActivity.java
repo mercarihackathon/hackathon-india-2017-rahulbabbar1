@@ -6,6 +6,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -18,6 +22,8 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import org.w3c.dom.Text;
+
 /**
  * Created by rahul on 8/10/17.
  */
@@ -25,6 +31,8 @@ import com.google.firebase.storage.UploadTask;
 public class UploadActivity extends AppCompatActivity {
 
     private double latitude,longitude;
+    private String name = "" , description = "";
+    private TextView nameTV, descTV;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +42,27 @@ public class UploadActivity extends AppCompatActivity {
         Intent data = getIntent();
         latitude = data.getDoubleExtra("lat", -1);
         longitude = data.getDoubleExtra("long", -1);
+
+        nameTV = (TextView) findViewById(R.id.filename);
+        descTV = (TextView) findViewById(R.id.description);
+
+        findViewById(R.id.button_add).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                fetchFile();
+            }
+        });
+        final Button uploadButton = (Button)findViewById(R.id.button_upload);
+        uploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                uploadButton.setEnabled(false);
+                description = descTV.toString();
+                name = nameTV.toString();
+                uploadFile(uri, new LatLng(latitude, longitude));
+            }
+        });
+
 
     }
 
@@ -49,13 +78,15 @@ public class UploadActivity extends AppCompatActivity {
         startActivityForResult(intent, READ_REQUEST_CODE);
     }
 
+    Uri uri = null;
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Uri uri = null;
             if (resultData != null) {
                 uri = resultData.getData();
-                uploadFile(uri, new LatLng(latitude, longitude));
+                Button button =(Button)findViewById(R.id.button_add);
+                button.setText(uri.toString());
+                button.setEnabled(false);
             }
         }
     }
@@ -74,12 +105,14 @@ public class UploadActivity extends AppCompatActivity {
         uploadTask.addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
+                Toast.makeText(UploadActivity.this, "Upload Failed!", Toast.LENGTH_SHORT).show();
             }
         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 String path = taskSnapshot.getMetadata().getPath();
                 updateDatabase(latLng, path);
+                Toast.makeText(UploadActivity.this, "Upload Successfull!", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -92,6 +125,8 @@ public class UploadActivity extends AppCompatActivity {
         myRef.child(key).child("lat").setValue(latLng.latitude);
         myRef.child(key).child("long").setValue(latLng.longitude);
         myRef.child(key).child("path").setValue(path);
+        myRef.child(key).child("name").setValue(name);
+        myRef.child(key).child("desc").setValue(description);
 
     }
 
