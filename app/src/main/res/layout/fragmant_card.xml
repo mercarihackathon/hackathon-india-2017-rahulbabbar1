@@ -32,7 +32,7 @@
                 android:id="@+id/point_name"
                 android:layout_toRightOf="@+id/point_photo"
                 android:layout_alignParentTop="true"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:lines="1"
                 />
 
@@ -43,6 +43,53 @@
                 android:layout_toRightOf="@+id/point_photo"
                 android:layout_below="@+id/point_name"
                 />
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_toRightOf="@+id/point_photo"
+                android:layout_below="@+id/point_desc"
+                >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/point_latlng"
+                    android:textSize="8sp"
+                    android:layout_alignParentLeft="true"
+                    android:lines="1"
+                    />
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:orientation="horizontal" >
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/point_size"
+                        android:textSize="8sp"
+                        android:layout_gravity="right"
+                        android:layout_marginRight="16dp"
+                        android:lines="1"
+                        />
+
+
+                </LinearLayout>
+
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/point_download"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginLeft="16dp"
+                android:src="@drawable/ic_down"
+                />
+
 
         </RelativeLayout>
 

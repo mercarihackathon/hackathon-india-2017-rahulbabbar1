@@ -44,6 +44,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -59,14 +60,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     boolean listenLoc = true;
     double rad = 0.01;
 
-    Set<Point> queued = new HashSet<Point>();
-    Set<Point> added = new HashSet<Point>();
+    static Set<Point> queued = new HashSet<>();
+    static Set<Point> added = new HashSet<>();
     private GoogleMap mMap;
     private double latitude, longitude;
     private String TAG = "MapsActivity";
     private BottomSheetBehavior bottomSheetBehavior;
 
     ProgressDialog progress ;
+    TextView leftSubtitle;
 
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -104,7 +106,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         progress.setMessage("Initializing :) ");
         progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progress.setIndeterminate(true);
-
         progress.show();
 
         initRecyclerView();
@@ -121,6 +122,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+        leftSubtitle = (TextView) findViewById(R.id.left_subtitle);
 
 
     }
@@ -185,6 +187,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             progress.setMessage("Getting Location :) ");
+            progress.setMessage("Getting Location :) ");
             mLocationPermissionGranted = true;
         } else {
             ActivityCompat.requestPermissions(this,
@@ -232,7 +235,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         case "lat":
                             mPoint.latitude = (Double) postSnapshot.getValue();
                             break;
-
                         case "long":
                             mPoint.longitude = (Double) postSnapshot.getValue();
                             break;
@@ -240,11 +242,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         case "path":
                             mPoint.path = (String) postSnapshot.getValue();
                             break;
-
+                        case "name":
+                            mPoint.name = (String) postSnapshot.getValue();
+                            break;
+                        case "type":
+                            mPoint.type = (String) postSnapshot.getValue();
+                            break;
                     }
                 }
                 if (!queued.contains(mPoint)) {
                     queued.add(mPoint);
+                    Log.d(TAG, "onChildAdded() called with: queud = [" + queued.size() + "], s = [" + s + "]");
                     addToMap();
                 }
             }
@@ -296,8 +304,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if(adapter!=null){
 //                    adapter.swap(points);
                     adapter.add(added);
-                    Log.d(TAG, "test() called");
-                    Log.d(TAG, "test " + points.size());
+                    leftSubtitle.setText(added.size() + " tags found nearby.");
+                    //Log.d(TAG, "test() called");
+                    //Log.d(TAG, "test " + points.size());
                 }
             }
         }

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -21,8 +22,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.jaredrummler.materialspinner.MaterialSpinner;
 
 import org.w3c.dom.Text;
+
+import java.util.List;
 
 /**
  * Created by rahul on 8/10/17.
@@ -33,6 +37,7 @@ public class UploadActivity extends AppCompatActivity {
     private double latitude,longitude;
     private String name = "" , description = "";
     private TextView nameTV, descTV;
+    private String type = "Official";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +69,16 @@ public class UploadActivity extends AppCompatActivity {
         });
 
 
+
+        MaterialSpinner spinner = (MaterialSpinner) findViewById(R.id.spinner);
+        spinner.setItems("Official", "Study", "Transit", "Infrastructure", "Entertainment", "Historic", "Offers" ,"Food");
+        spinner.setOnItemSelectedListener(new MaterialSpinner.OnItemSelectedListener<String>() {
+
+            @Override public void onItemSelected(MaterialSpinner view, int position, long id, String item) {
+                Snackbar.make(view, "Clicked " + item, Snackbar.LENGTH_LONG).show();
+                type = item;
+            }
+        });
     }
 
     private static final int READ_REQUEST_CODE = 42;
@@ -127,6 +142,7 @@ public class UploadActivity extends AppCompatActivity {
         myRef.child(key).child("path").setValue(path);
         myRef.child(key).child("name").setValue(name);
         myRef.child(key).child("desc").setValue(description);
+        myRef.child(key).child("type").setValue(type);
 
     }
 
