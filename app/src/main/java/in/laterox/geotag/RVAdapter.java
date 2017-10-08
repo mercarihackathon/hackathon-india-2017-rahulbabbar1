@@ -121,7 +121,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.PointViewHolder>{
         pointViewHolder.pointDown.setEnabled(true);
     }
 
-    void startDownload(Uri uri, String filename, Context context){
+    public static void startDownload(Uri uri, String filename, Context context){
         DownloadManager.Request request = new DownloadManager.Request(uri);
         request.setDescription(uri.toString());
         request.setTitle(filename);

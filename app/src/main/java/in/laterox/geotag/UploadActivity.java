@@ -1,6 +1,7 @@
 package in.laterox.geotag;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,6 +39,8 @@ public class UploadActivity extends AppCompatActivity {
     private String name = "" , description = "";
     private TextView nameTV, descTV;
     private String type = "Official";
+
+    ProgressDialog progress ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,18 +119,27 @@ public class UploadActivity extends AppCompatActivity {
 
         UploadTask uploadTask = riversRef.putFile(uri);
 
+        progress = new ProgressDialog(this);
+        progress.setMessage("Uploading :) ");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.setIndeterminate(true);
+        progress.show();
 
         uploadTask.addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
+                progress.cancel();
                 Toast.makeText(UploadActivity.this, "Upload Failed!", Toast.LENGTH_SHORT).show();
+                finish();
             }
         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 String path = taskSnapshot.getMetadata().getPath();
                 updateDatabase(latLng, path);
+                progress.cancel();
                 Toast.makeText(UploadActivity.this, "Upload Successfull!", Toast.LENGTH_SHORT).show();
+                finish();
             }
         });
     }

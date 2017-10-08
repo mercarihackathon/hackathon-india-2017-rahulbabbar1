@@ -45,9 +45,11 @@ import com.google.firebase.database.Query;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
@@ -62,7 +64,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     static Set<Point> queued = new HashSet<>();
     static Set<Point> added = new HashSet<>();
-    private GoogleMap mMap;
+    public static GoogleMap mMap;
     private double latitude, longitude;
     private String TAG = "MapsActivity";
     private BottomSheetBehavior bottomSheetBehavior;
@@ -296,8 +298,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             Point mp = (Point) it.next();
             Log.d(TAG, "addToMap() called" + mp.latitude + mp.longitude );
             if (!added.contains(mp)) {
+                Marker tmk = mMap.addMarker(new MarkerOptions().position(new LatLng(mp.latitude, mp.longitude)).title(mp.name).snippet(mp.description));
+
                 added.add(mp);
-                mMap.addMarker(new MarkerOptions().position(new LatLng(mp.latitude, mp.longitude)).title("Title"));
+                mPdata.put(tmk.getId(), mp);
+
                 points.add(mp);
                 Log.d(TAG, "test " + points.size());
 
@@ -312,10 +317,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    public Map<String, Point> mPdata = new HashMap<>();
+
     @Override
     public boolean onMarkerClick(Marker marker){
         Intent pointActivity = new Intent(MapsActivity.this, PointActivity.class);
-        startActivity(pointActivity);
+        Point mp = mPdata.get(marker.getId());
+        if(mp!=null){
+            pointActivity.putExtra("lat", mp.latitude);
+            pointActivity.putExtra("long", mp.longitude);
+            pointActivity.putExtra("path", mp.path);
+            startActivity(pointActivity);
+        }
         return false;
     }
 

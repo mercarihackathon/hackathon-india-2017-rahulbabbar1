@@ -12,6 +12,8 @@ public class Point {
     double longitude;
     String path;
     String name, description,type;
+    int size;
+    String url;
 
     public Point(double latitude, double longitude, String path) {
         this.latitude = latitude;

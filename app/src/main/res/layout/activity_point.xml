@@ -45,6 +45,42 @@
                 android:textColor="#333"
                 android:textSize="15sp" />
 
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:orientation="horizontal"
+                android:layout_weight="1"
+                >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/latlng"
+                    android:text="-, -"
+                    android:textSize="8sp"
+                    android:lines="1"
+                    />
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:orientation="horizontal" >
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/size"
+                        android:textSize="8sp"
+                        android:text="calculating.."
+                        android:layout_gravity="right"
+                        android:layout_marginRight="16dp"
+                        android:lines="1"
+                        />
+
+
+                </LinearLayout>
+
+
+            </LinearLayout>
 
             <Button
                 android:id="@+id/button_down"
